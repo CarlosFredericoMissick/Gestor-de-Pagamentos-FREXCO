@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 
     <script>
@@ -39,7 +40,7 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                         Extrator NFSe
                     </h1>
-                    <p class="text-sm text-gray-500 mt-0.5">v32.2 - Reprocessamento Auto</p>
+                    <p class="text-sm text-gray-500 mt-0.5">v33.0 - Downloads ZIP/Excel</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -153,10 +154,16 @@
 
                 <!-- Lista de Contratos -->
                 <div>
-                    <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        <i data-lucide="list" class="w-4 h-4"></i>
-                        Contratos Salvos (<span id="contratosSavedCount">0</span>)
-                    </h3>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+                            <i data-lucide="list" class="w-4 h-4"></i>
+                            Contratos Salvos (<span id="contratosSavedCount">0</span>)
+                        </h3>
+                        <button onclick="downloadAllContratosZip()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all" title="Baixar todos os contratos em um arquivo ZIP">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Baixar Todos (.zip)
+                        </button>
+                    </div>
                     <div id="contratosListContainer" class="space-y-2 max-h-[400px] overflow-y-auto">
                         <!-- Contratos serão listados aqui -->
                     </div>
@@ -239,10 +246,16 @@
 
                 <!-- Lista de Motoristas -->
                 <div>
-                    <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                        Motoristas Cadastrados (<span id="pixSavedCount">0</span>)
-                    </h3>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            Motoristas Cadastrados (<span id="pixSavedCount">0</span>)
+                        </h3>
+                        <button onclick="exportPixToExcel()" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all" title="Exportar todos os motoristas para Excel">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            Exportar Planilha
+                        </button>
+                    </div>
                     <div class="bg-gray-50 rounded-lg p-2 mb-2">
                         <div class="grid grid-cols-12 gap-2 text-xs font-bold text-gray-600 px-3 py-2">
                             <div class="col-span-1"></div>
@@ -295,8 +308,10 @@
                 spAccessToken = null;
                 spAccount = null;
                 document.getElementById('spText').textContent = 'SharePoint';
-                document.getElementById('btnSharePoint').classList.remove('bg-green-600');
-                document.getElementById('btnSharePoint').classList.add('bg-blue-600');
+                document.getElementById('btnSharePoint').classList.remove('bg-green-600', 'hover:bg-green-700');
+                document.getElementById('btnSharePoint').classList.add('bg-blue-600', 'hover:bg-blue-700');
+                // Trocar ícone de volta para cloud
+                document.querySelector('#btnSharePoint i').setAttribute('data-lucide', 'cloud');
                 await loadContratos(); // Voltar para local
                 await loadPixMotoristas(); // Voltar PIX local
                 
@@ -317,9 +332,11 @@
                     spAccessToken = tokenResponse.accessToken;
                     useSharePoint = true;
                     useSharePointPix = true;
-                    document.getElementById('spText').textContent = 'SP ✓';
-                    document.getElementById('btnSharePoint').classList.remove('bg-blue-600');
-                    document.getElementById('btnSharePoint').classList.add('bg-green-600');
+                    document.getElementById('spText').textContent = 'SharePoint';
+                    document.getElementById('btnSharePoint').classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    document.getElementById('btnSharePoint').classList.add('bg-green-600', 'hover:bg-green-700');
+                    // Trocar ícone para check
+                    document.querySelector('#btnSharePoint i').setAttribute('data-lucide', 'check');
                     await loadContratosFromSharePoint();
                     await loadPixFromSharePoint();
                     
@@ -851,6 +868,45 @@
             }
         }
 
+        function exportPixToExcel() {
+            if (pixList.length === 0) {
+                alert('Nenhum motorista cadastrado para exportar!');
+                return;
+            }
+
+            try {
+                // Preparar dados para exportação
+                const exportData = pixList.map(motorista => ({
+                    'Nome Motorista': motorista.nomeMotorista,
+                    'Chave PIX': motorista.chavePix
+                }));
+                
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Motoristas PIX");
+                
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const date = new Date().toISOString().split('T')[0];
+                a.download = `Motoristas_PIX_${date}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+                
+                console.log(`✅ Exportados ${pixList.length} motoristas`);
+                alert(`✅ Planilha exportada com sucesso!\n\n${pixList.length} motoristas no arquivo.`);
+            } catch (error) {
+                console.error('Erro ao exportar PIX:', error);
+                alert('Erro ao exportar planilha!');
+            }
+        }
+
         lucide.createIcons();
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -1004,6 +1060,84 @@
             } catch (error) {
                 console.error('Erro ao visualizar:', error);
                 alert('Erro ao abrir arquivo');
+            }
+        }
+
+        async function downloadAllContratosZip() {
+            if (contratosList.length === 0) {
+                alert('Nenhum contrato disponível para download!');
+                return;
+            }
+
+            try {
+                const zip = new JSZip();
+                let filesAdded = 0;
+
+                for (const contrato of contratosList) {
+                    try {
+                        let blob;
+                        
+                        if (contrato.fromSharePoint) {
+                            // Baixar do SharePoint
+                            if (!spAccessToken) {
+                                console.error('Sem token para:', contrato.nomeArquivo);
+                                continue;
+                            }
+                            
+                            const response = await fetch(
+                                `https://graph.microsoft.com/v1.0/sites/${SP_SITE_ID}/drive/items/${contrato.id}`,
+                                { headers: { 'Authorization': `Bearer ${spAccessToken}` } }
+                            );
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data['@microsoft.graph.downloadUrl']) {
+                                    const fileResponse = await fetch(data['@microsoft.graph.downloadUrl']);
+                                    blob = await fileResponse.blob();
+                                }
+                            }
+                        } else {
+                            // Arquivo local (base64)
+                            if (contrato.fileData) {
+                                blob = await fetch(contrato.fileData).then(r => r.blob());
+                            }
+                        }
+
+                        if (blob) {
+                            zip.file(contrato.nomeArquivo, blob);
+                            filesAdded++;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao adicionar', contrato.nomeArquivo, error);
+                    }
+                }
+
+                if (filesAdded === 0) {
+                    alert('Não foi possível adicionar nenhum contrato ao ZIP!');
+                    return;
+                }
+
+                // Gerar ZIP
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                
+                // Download
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                const date = new Date().toISOString().split('T')[0];
+                a.download = `Contratos_NFSe_${date}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                console.log(`✅ ZIP gerado com ${filesAdded} contratos`);
+                alert(`✅ Download iniciado!\n\n${filesAdded} contratos no arquivo ZIP.`);
+            } catch (error) {
+                console.error('Erro ao gerar ZIP:', error);
+                alert('Erro ao gerar arquivo ZIP!');
             }
         }
 
