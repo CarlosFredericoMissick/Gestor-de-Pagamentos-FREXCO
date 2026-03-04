@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrator NFSe - Frexco</title>
+    <title>Gestor de Pagamentos • Frexco</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M25 25 Q25 0 50 0 Q50 25 75 25 Q100 25 100 50 Q75 50 75 75 Q75 100 50 100 Q50 75 25 75 Q0 75 0 50 Q25 50 25 25 Z' fill='%238DC63F'/></svg>" type="image/svg+xml">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -19,52 +20,124 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#16a34a',
-                        'primary-dark': '#15803d',
-                        'primary-light': '#22c55e',
+                        primary: '#8DC63F',
+                        'primary-dark': '#7AB82E',
+                        'primary-light': '#A3D35A',
+                        'frexco': '#8DC63F',
+                        'frexco-dark': '#7AB82E',
                     }
                 }
             }
         }
     </script>
+    
+    <style>
+        /* Fonte moderna Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Gradiente Frexco */
+        .bg-frexco-gradient {
+            background: linear-gradient(135deg, #8DC63F 0%, #7AB82E 100%);
+        }
+        
+        /* Animação suave */
+        .transition-all-smooth {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Shadow moderno */
+        .shadow-frexco {
+            box-shadow: 0 4px 20px rgba(141, 198, 63, 0.15);
+        }
+        
+        /* Badge conectado */
+        .badge-connected {
+            animation: pulse-soft 2s infinite;
+        }
+        
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+<body class="min-h-screen font-sans text-gray-800" style="background: linear-gradient(135deg, #f8fdf5 0%, #f0f9ff 100%);">
 
     <div class="max-w-7xl mx-auto px-4 py-6">
-        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-                    <i data-lucide="file-text" class="text-white w-7 h-7"></i>
+        <header class="bg-white shadow-lg mb-6">
+            <!-- Header Frexco com logo real -->
+            <div class="bg-frexco-gradient px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <!-- Logo Frexco Real - VOCÊ PRECISA HOSPEDAR A IMAGEM -->
+                    <!-- OPÇÃO 1: Se hospedar no GitHub junto com o HTML -->
+                    <img src="logo-frexco-branco.png" alt="Frexco" class="h-10 md:h-12" style="filter: brightness(0) invert(1);">
+                    
+                    <!-- OPÇÃO 2: Ou use o caminho completo se estiver em outro lugar -->
+                    <!-- <img src="https://seu-dominio.com/logo-frexco-branco.png" alt="Frexco" class="h-10 md:h-12"> -->
+                    
+                    <div class="border-l-2 border-white/30 pl-4">
+                        <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
+                            Gestor de Pagamentos
+                        </h1>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v35.1</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Extrator NFSe
-                    </h1>
-                    <p class="text-sm text-gray-500 mt-0.5">v34.0 - Ordenação Tabela</p>
+                
+                <!-- Indicador SharePoint -->
+                <div id="spIndicator" class="hidden">
+                    <div class="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/30">
+                        <div class="w-2 h-2 bg-white rounded-full badge-connected"></div>
+                        <span class="text-white text-sm font-semibold">SharePoint Conectado</span>
+                    </div>
                 </div>
             </div>
-            <div class="flex gap-2">
+            
+            <!-- Botões de ação -->
+            <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-wrap gap-2 items-center">
                 <button id="btnSharePoint" onclick="toggleSharePoint()" 
-                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
-                    <i data-lucide="cloud" class="w-4 h-4"></i> <span id="spText">SharePoint</span>
+                    class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl font-semibold shadow-sm border border-gray-200 transition-all-smooth text-sm hover:shadow-md hover:border-frexco/30">
+                    <i data-lucide="cloud" class="w-4 h-4 text-gray-600"></i> 
+                    <span>Conectar SharePoint</span>
                 </button>
+                <div class="h-6 w-px bg-gray-300"></div>
                 <button id="btnContratos" onclick="toggleContratosModal()" 
-                    class="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
+                    class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all-smooth text-sm hover:shadow-md">
                     <i data-lucide="folder" class="w-4 h-4"></i> Contratos (<span id="contratosCount">0</span>)
                 </button>
                 <button id="btnPix" onclick="togglePixModal()" 
-                    class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
-                    <i data-lucide="key" class="w-4 h-4"></i> PIX Motoristas (<span id="pixCount">0</span>)
+                    class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all-smooth text-sm hover:shadow-md">
+                    <i data-lucide="key" class="w-4 h-4"></i> PIX (<span id="pixCount">0</span>)
                 </button>
                 <button id="btnExport" onclick="exportToExcel()" disabled 
-                    class="hidden flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
+                    class="hidden flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all-smooth text-sm hover:shadow-md disabled:opacity-50">
                     <i data-lucide="download" class="w-4 h-4"></i> Excel
                 </button>
-                <button onclick="location.reload()" class="text-gray-600 hover:text-red-600 font-medium px-3 py-2 text-sm">
-                    Limpar
+                <button onclick="location.reload()" class="ml-auto text-gray-600 hover:text-red-600 font-medium px-3 py-2 text-sm transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
             </div>
         </header>
+
+        <!-- INSTRUÇÕES PARA VOCÊ: 
+        
+        Para usar o logo real Frexco:
+        
+        1. No seu repositório GitHub, adicione a imagem:
+           - Faça upload do arquivo: logo-frexco-branco.png
+           - Coloque na mesma pasta do index.html
+        
+        2. OU use URL completa:
+           - Se a imagem estiver em outro lugar
+           - Substitua: src="https://seu-link-aqui.com/logo.png"
+        
+        3. A imagem atual usa filter para inverter cores
+           - Se sua imagem JÁ for branca, remova: style="filter: brightness(0) invert(1);"
+        
+        -->
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-3 space-y-4">
@@ -145,7 +218,7 @@
     <div id="contratosModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+            <div class="bg-frexco-gradient px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i data-lucide="folder-open" class="w-6 h-6 text-white"></i>
                     <h2 class="text-xl font-bold text-white">Gestão de Contratos</h2>
@@ -174,7 +247,7 @@
                             <i data-lucide="list" class="w-4 h-4"></i>
                             Contratos Salvos (<span id="contratosSavedCount">0</span>)
                         </h3>
-                        <button onclick="downloadAllContratosZip()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all" title="Baixar todos os contratos em um arquivo ZIP">
+                        <button onclick="downloadAllContratosZip()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm" title="Baixar todos os contratos em um arquivo ZIP">
                             <i data-lucide="download" class="w-4 h-4"></i>
                             Baixar Todos (.zip)
                         </button>
@@ -191,7 +264,7 @@
     <div id="pixModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+            <div class="bg-frexco-gradient px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i data-lucide="key" class="w-6 h-6 text-white"></i>
                     <h2 class="text-xl font-bold text-white">Gestão de Chaves PIX</h2>
@@ -226,7 +299,7 @@
 
                 <!-- Botão Adicionar Manual -->
                 <div class="mb-6 flex justify-end">
-                    <button onclick="showAddPixForm()" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all">
+                    <button onclick="showAddPixForm()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         Adicionar Manualmente
                     </button>
@@ -253,7 +326,7 @@
                         <button onclick="cancelPixForm()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition-all">
                             Cancelar
                         </button>
-                        <button onclick="savePixEntry()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-all">
+                        <button onclick="savePixEntry()" class="px-4 py-2 bg-frexco hover:bg-frexco-dark text-white rounded-lg text-sm font-semibold transition-all">
                             <span id="pixFormSaveText">Salvar</span>
                         </button>
                     </div>
@@ -266,7 +339,7 @@
                             <i data-lucide="users" class="w-4 h-4"></i>
                             Motoristas Cadastrados (<span id="pixSavedCount">0</span>)
                         </h3>
-                        <button onclick="exportPixToExcel()" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all" title="Exportar todos os motoristas para Excel">
+                        <button onclick="exportPixToExcel()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm" title="Exportar todos os motoristas para Excel">
                             <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                             Exportar Planilha
                         </button>
@@ -322,13 +395,13 @@
                 useSharePointPix = false;
                 spAccessToken = null;
                 spAccount = null;
-                document.getElementById('spText').textContent = 'SharePoint';
-                document.getElementById('btnSharePoint').classList.remove('bg-green-600');
-                document.getElementById('btnSharePoint').classList.add('bg-blue-600');
-                await loadContratos(); // Voltar para local
-                await loadPixMotoristas(); // Voltar PIX local
                 
-                // Reprocessar notas já extraídas com dados locais
+                // Atualizar UI
+                document.getElementById('spIndicator').classList.add('hidden');
+                document.querySelector('#btnSharePoint span').textContent = 'Conectar SharePoint';
+                
+                await loadContratos();
+                await loadPixMotoristas();
                 reprocessExtractedResults();
             } else {
                 // Conectar
@@ -345,13 +418,13 @@
                     spAccessToken = tokenResponse.accessToken;
                     useSharePoint = true;
                     useSharePointPix = true;
-                    document.getElementById('spText').textContent = 'SharePoint';
-                    document.getElementById('btnSharePoint').classList.remove('bg-blue-600');
-                    document.getElementById('btnSharePoint').classList.add('bg-green-600');
+                    
+                    // Atualizar UI - mostrar indicador
+                    document.getElementById('spIndicator').classList.remove('hidden');
+                    document.querySelector('#btnSharePoint span').textContent = 'Desconectar';
+                    
                     await loadContratosFromSharePoint();
                     await loadPixFromSharePoint();
-                    
-                    // Reprocessar notas já extraídas com dados do SharePoint
                     reprocessExtractedResults();
                 } catch (error) {
                     console.error('Erro login SharePoint:', error);
