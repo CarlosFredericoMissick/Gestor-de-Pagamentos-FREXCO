@@ -39,7 +39,7 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                         Extrator NFSe
                     </h1>
-                    <p class="text-sm text-gray-500 mt-0.5">v32.1 - PIX + Correções</p>
+                    <p class="text-sm text-gray-500 mt-0.5">v32.2 - Reprocessamento Auto</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -299,6 +299,9 @@
                 document.getElementById('btnSharePoint').classList.add('bg-blue-600');
                 await loadContratos(); // Voltar para local
                 await loadPixMotoristas(); // Voltar PIX local
+                
+                // Reprocessar notas já extraídas com dados locais
+                reprocessExtractedResults();
             } else {
                 // Conectar
                 try {
@@ -319,6 +322,9 @@
                     document.getElementById('btnSharePoint').classList.add('bg-green-600');
                     await loadContratosFromSharePoint();
                     await loadPixFromSharePoint();
+                    
+                    // Reprocessar notas já extraídas com dados do SharePoint
+                    reprocessExtractedResults();
                 } catch (error) {
                     console.error('Erro login SharePoint:', error);
                     alert('Erro ao conectar SharePoint. Usando local.');
@@ -1103,6 +1109,62 @@
             document.getElementById('statsPanel').classList.remove('hidden');
             document.getElementById('coveragePercent').textContent = `${percentage}%`;
             document.getElementById('coverageText').textContent = `${notasComContrato} de ${totalNotas} com contrato`;
+        }
+
+        // ========================================
+        // REPROCESSAR RESULTADOS APÓS LOGIN SHAREPOINT
+        // ========================================
+
+        function reprocessExtractedResults() {
+            if (extractedResults.length === 0) {
+                console.log('Nenhum resultado para reprocessar');
+                return;
+            }
+
+            console.log(`🔄 Reprocessando ${extractedResults.length} notas...`);
+            
+            let contratosAtualizados = 0;
+            let pixAtualizados = 0;
+
+            // Atualizar cada resultado
+            extractedResults.forEach(result => {
+                // Re-verificar contrato
+                const contratoAntes = result.temContrato;
+                const contratoMatch = temContrato(result.arquivo);
+                result.temContrato = contratoMatch.match;
+                result.nomeContrato = contratoMatch.contrato;
+                
+                if (!contratoAntes && result.temContrato) {
+                    contratosAtualizados++;
+                }
+
+                // Re-verificar PIX
+                const pixAntes = result.chavePix || '';
+                result.chavePix = findPixByFileName(result.arquivo);
+                
+                if (!pixAntes && result.chavePix) {
+                    pixAtualizados++;
+                }
+            });
+
+            // Limpar e re-renderizar tabela
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+            
+            extractedResults.forEach(result => {
+                renderRow(result);
+            });
+
+            // Atualizar estatísticas
+            updateCoverageStats();
+
+            console.log(`✅ Reprocessamento concluído!`);
+            console.log(`   Contratos encontrados: ${contratosAtualizados}`);
+            console.log(`   PIX encontrados: ${pixAtualizados}`);
+
+            if (contratosAtualizados > 0 || pixAtualizados > 0) {
+                alert(`✅ Dados atualizados!\n\nContratos: +${contratosAtualizados}\nChaves PIX: +${pixAtualizados}`);
+            }
         }
 
         // ========================================
