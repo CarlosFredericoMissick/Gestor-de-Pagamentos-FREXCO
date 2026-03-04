@@ -39,7 +39,7 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                         Extrator NFSe
                     </h1>
-                    <p class="text-sm text-gray-500 mt-0.5">v31.1 - Com Visualizador</p>
+                    <p class="text-sm text-gray-500 mt-0.5">v32.0 - Gestão PIX Motoristas</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -50,6 +50,10 @@
                 <button id="btnContratos" onclick="toggleContratosModal()" 
                     class="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
                     <i data-lucide="folder" class="w-4 h-4"></i> Contratos (<span id="contratosCount">0</span>)
+                </button>
+                <button id="btnPix" onclick="togglePixModal()" 
+                    class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
+                    <i data-lucide="key" class="w-4 h-4"></i> PIX Motoristas (<span id="pixCount">0</span>)
                 </button>
                 <button id="btnExport" onclick="exportToExcel()" disabled 
                     class="hidden flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition-all text-sm">
@@ -110,6 +114,7 @@
                                     <th class="px-3 py-3">NF</th>
                                     <th class="px-3 py-3">Contrato</th>
                                     <th class="px-3 py-3">Modelo</th>
+                                    <th class="px-3 py-3">Chave PIX</th>
                                 </tr>
                             </thead>
                             <tbody id="resultsBody" class="text-xs divide-y divide-gray-100"></tbody>
@@ -160,6 +165,92 @@
         </div>
     </div>
 
+    <!-- Modal PIX Motoristas -->
+    <div id="pixModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="key" class="w-6 h-6 text-white"></i>
+                    <h2 class="text-xl font-bold text-white">Gestão de Chaves PIX</h2>
+                </div>
+                <button onclick="togglePixModal()" class="text-white/80 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Upload Excel Area -->
+                <div class="mb-6">
+                    <div id="dropZonePix" class="border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 p-6 cursor-pointer hover:bg-purple-100/50 hover:border-purple-400 transition-all">
+                        <div class="flex flex-col items-center pointer-events-none">
+                            <i data-lucide="upload" class="w-10 h-10 text-purple-600 mb-2"></i>
+                            <p class="text-sm font-semibold text-gray-700 mb-1">Upload Planilha Excel</p>
+                            <p class="text-xs text-gray-500 mb-2">Arraste arquivo .xlsx ou clique para selecionar</p>
+                            <p class="text-xs text-gray-400">Colunas: Nome Motorista | Chave PIX</p>
+                        </div>
+                        <input type="file" id="pixExcelInput" accept=".xlsx" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Botão Adicionar Manual -->
+                <div class="mb-6 flex justify-end">
+                    <button onclick="showAddPixForm()" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Adicionar Manualmente
+                    </button>
+                </div>
+
+                <!-- Form Adicionar/Editar (hidden por padrão) -->
+                <div id="pixForm" class="hidden mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3">
+                        <span id="pixFormTitle">Adicionar Motorista</span>
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome do Motorista</label>
+                            <input type="text" id="pixNome" placeholder="Ex: João Silva" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Chave PIX</label>
+                            <input type="text" id="pixChave" placeholder="Ex: joao@email.com" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="cancelPixForm()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition-all">
+                            Cancelar
+                        </button>
+                        <button onclick="savePixEntry()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-all">
+                            <span id="pixFormSaveText">Salvar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de Motoristas -->
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        Motoristas Cadastrados (<span id="pixSavedCount">0</span>)
+                    </h3>
+                    <div class="bg-gray-50 rounded-lg p-2 mb-2">
+                        <div class="grid grid-cols-12 gap-2 text-xs font-bold text-gray-600 px-3 py-2">
+                            <div class="col-span-1"></div>
+                            <div class="col-span-5">Nome do Motorista</div>
+                            <div class="col-span-4">Chave PIX</div>
+                            <div class="col-span-2 text-right">Ações</div>
+                        </div>
+                    </div>
+                    <div id="pixListContainer" class="space-y-2 max-h-[300px] overflow-y-auto">
+                        <!-- Motoristas serão listados aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let filesQueue = [];
         let extractedResults = [];
@@ -171,6 +262,11 @@
         let useSharePoint = false;
         let spAccessToken = null;
         let spAccount = null;
+        
+        // PIX Motoristas
+        let pixDB = null;
+        let pixList = [];
+        let useSharePointPix = false;
 
         const msalConfig = {
             auth: {
@@ -187,12 +283,14 @@
             if (useSharePoint) {
                 // Desconectar
                 useSharePoint = false;
+                useSharePointPix = false;
                 spAccessToken = null;
                 spAccount = null;
                 document.getElementById('spText').textContent = 'SharePoint';
                 document.getElementById('btnSharePoint').classList.remove('bg-green-600');
                 document.getElementById('btnSharePoint').classList.add('bg-blue-600');
                 await loadContratos(); // Voltar para local
+                await loadPixMotoristas(); // Voltar PIX local
             } else {
                 // Conectar
                 try {
@@ -207,10 +305,12 @@
                     });
                     spAccessToken = tokenResponse.accessToken;
                     useSharePoint = true;
+                    useSharePointPix = true;
                     document.getElementById('spText').textContent = 'SP ✓';
                     document.getElementById('btnSharePoint').classList.remove('bg-blue-600');
                     document.getElementById('btnSharePoint').classList.add('bg-green-600');
                     await loadContratosFromSharePoint();
+                    await loadPixFromSharePoint();
                 } catch (error) {
                     console.error('Erro login SharePoint:', error);
                     alert('Erro ao conectar SharePoint. Usando local.');
@@ -297,6 +397,402 @@
                 console.error('Erro delete SharePoint:', error);
                 return false;
             }
+        }
+
+        // ========================================
+        // PIX MOTORISTAS - INDEXEDDB
+        // ========================================
+
+        async function initPixDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('NFSePixMotoristas', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    pixDB = request.result;
+                    resolve(pixDB);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('motoristas')) {
+                        const objectStore = db.createObjectStore('motoristas', { keyPath: 'id', autoIncrement: true });
+                        objectStore.createIndex('nomeMotorista', 'nomeMotorista', { unique: false });
+                    }
+                };
+            });
+        }
+
+        async function savePixMotorista(nome, chave) {
+            if (!pixDB) await initPixDB();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = pixDB.transaction(['motoristas'], 'readwrite');
+                const store = transaction.objectStore('motoristas');
+                
+                const data = {
+                    nomeMotorista: nome.trim(),
+                    chavePix: chave.trim(),
+                    dataAdicao: new Date().toISOString(),
+                    fromSharePoint: false
+                };
+                
+                const request = store.add(data);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function updatePixMotorista(id, nome, chave) {
+            if (!pixDB) await initPixDB();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = pixDB.transaction(['motoristas'], 'readwrite');
+                const store = transaction.objectStore('motoristas');
+                
+                const getRequest = store.get(id);
+                getRequest.onsuccess = () => {
+                    const data = getRequest.result;
+                    data.nomeMotorista = nome.trim();
+                    data.chavePix = chave.trim();
+                    
+                    const updateRequest = store.put(data);
+                    updateRequest.onsuccess = () => resolve();
+                    updateRequest.onerror = () => reject(updateRequest.error);
+                };
+                getRequest.onerror = () => reject(getRequest.error);
+            });
+        }
+
+        async function deletePixMotorista(id) {
+            if (!pixDB) await initPixDB();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = pixDB.transaction(['motoristas'], 'readwrite');
+                const store = transaction.objectStore('motoristas');
+                const request = store.delete(id);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function loadPixMotoristas() {
+            if (!pixDB) await initPixDB();
+            
+            return new Promise((resolve, reject) => {
+                const transaction = pixDB.transaction(['motoristas'], 'readonly');
+                const store = transaction.objectStore('motoristas');
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    pixList = request.result || [];
+                    updatePixUI();
+                    resolve(pixList);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // ========================================
+        // PIX MOTORISTAS - SHAREPOINT
+        // ========================================
+
+        async function loadPixFromSharePoint() {
+            if (!spAccessToken) return;
+            
+            try {
+                const response = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/${SP_SITE_ID}/drive/special/approot:/pix-motoristas.json:/content`,
+                    { headers: { 'Authorization': `Bearer ${spAccessToken}` } }
+                );
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const data = JSON.parse(text);
+                    pixList = data.motoristas || [];
+                    updatePixUI();
+                    console.log('✅ PIX SharePoint:', pixList.length, 'motoristas');
+                } else if (response.status === 404) {
+                    // Arquivo não existe ainda, criar vazio
+                    pixList = [];
+                    await savePixToSharePoint();
+                } else {
+                    throw new Error('Falha ao carregar PIX');
+                }
+            } catch (error) {
+                console.error('Erro SharePoint PIX:', error);
+                useSharePointPix = false;
+                await loadPixMotoristas();
+            }
+        }
+
+        async function savePixToSharePoint() {
+            if (!spAccessToken) return false;
+            
+            try {
+                const jsonData = JSON.stringify({
+                    motoristas: pixList,
+                    lastUpdate: new Date().toISOString()
+                }, null, 2);
+                
+                const response = await fetch(
+                    `https://graph.microsoft.com/v1.0/sites/${SP_SITE_ID}/drive/special/approot:/pix-motoristas.json:/content`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${spAccessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: jsonData
+                    }
+                );
+                
+                if (response.ok) {
+                    console.log('✅ PIX salvo no SharePoint');
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Erro ao salvar PIX SharePoint:', error);
+                return false;
+            }
+        }
+
+        async function addOrUpdatePixEntry(nome, chave) {
+            const nomeNormalizado = normalizeFileName(nome);
+            
+            // Verificar se já existe
+            const existingIndex = pixList.findIndex(m => 
+                normalizeFileName(m.nomeMotorista) === nomeNormalizado
+            );
+            
+            if (existingIndex >= 0) {
+                // Atualizar existente
+                pixList[existingIndex].chavePix = chave.trim();
+                pixList[existingIndex].dataAtualizacao = new Date().toISOString();
+            } else {
+                // Adicionar novo
+                pixList.push({
+                    id: Date.now(),
+                    nomeMotorista: nome.trim(),
+                    chavePix: chave.trim(),
+                    dataAdicao: new Date().toISOString(),
+                    fromSharePoint: useSharePointPix
+                });
+            }
+            
+            if (useSharePointPix) {
+                await savePixToSharePoint();
+            } else {
+                // Salvar no IndexedDB
+                if (existingIndex >= 0) {
+                    await updatePixMotorista(pixList[existingIndex].id, nome, chave);
+                } else {
+                    await savePixMotorista(nome, chave);
+                }
+                await loadPixMotoristas();
+            }
+        }
+
+        async function removePixEntry(index) {
+            if (!confirm('Deseja realmente excluir este motorista?')) return;
+            
+            const motorista = pixList[index];
+            
+            if (useSharePointPix) {
+                pixList.splice(index, 1);
+                await savePixToSharePoint();
+                await loadPixFromSharePoint();
+            } else {
+                await deletePixMotorista(motorista.id);
+                await loadPixMotoristas();
+            }
+        }
+
+        // ========================================
+        // PIX - UPLOAD EXCEL
+        // ========================================
+
+        async function processPixExcel(file) {
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                if (jsonData.length < 2) {
+                    alert('Planilha vazia ou sem dados!');
+                    return;
+                }
+                
+                // Ignorar header (primeira linha)
+                const rows = jsonData.slice(1);
+                let added = 0;
+                let updated = 0;
+                
+                for (const row of rows) {
+                    if (row.length >= 2 && row[0] && row[1]) {
+                        const nome = String(row[0]).trim();
+                        const chave = String(row[1]).trim();
+                        
+                        if (nome && chave) {
+                            const nomeNormalizado = normalizeFileName(nome);
+                            const exists = pixList.some(m => 
+                                normalizeFileName(m.nomeMotorista) === nomeNormalizado
+                            );
+                            
+                            if (exists) {
+                                updated++;
+                            } else {
+                                added++;
+                            }
+                            
+                            await addOrUpdatePixEntry(nome, chave);
+                        }
+                    }
+                }
+                
+                alert(`✅ Planilha processada!\n\nNovos: ${added}\nAtualizados: ${updated}`);
+                
+                if (useSharePointPix) {
+                    await loadPixFromSharePoint();
+                } else {
+                    await loadPixMotoristas();
+                }
+            } catch (error) {
+                console.error('Erro ao processar Excel:', error);
+                alert('Erro ao processar planilha Excel!');
+            }
+        }
+
+        // ========================================
+        // PIX - UI FUNCTIONS
+        // ========================================
+
+        function togglePixModal() {
+            const modal = document.getElementById('pixModal');
+            modal.classList.toggle('hidden');
+            
+            if (!modal.classList.contains('hidden')) {
+                lucide.createIcons();
+            }
+        }
+
+        function updatePixUI() {
+            document.getElementById('pixCount').textContent = pixList.length;
+            document.getElementById('pixSavedCount').textContent = pixList.length;
+            
+            const container = document.getElementById('pixListContainer');
+            
+            if (pixList.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">Nenhum motorista cadastrado</p>';
+            } else {
+                container.innerHTML = pixList.map((motorista, index) => {
+                    const icon = useSharePointPix ? 'cloud' : 'hard-drive';
+                    const iconColor = useSharePointPix ? 'text-blue-600' : 'text-gray-600';
+                    
+                    return `
+                    <div class="bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+                        <div class="grid grid-cols-12 gap-2 items-center px-3 py-3">
+                            <div class="col-span-1 flex justify-center">
+                                <i data-lucide="${icon}" class="w-4 h-4 ${iconColor}"></i>
+                            </div>
+                            <div class="col-span-5">
+                                <p class="text-sm font-medium text-gray-900 truncate" title="${motorista.nomeMotorista}">${motorista.nomeMotorista}</p>
+                            </div>
+                            <div class="col-span-4">
+                                <p class="text-sm text-gray-600 truncate" title="${motorista.chavePix}">${motorista.chavePix}</p>
+                            </div>
+                            <div class="col-span-2 flex justify-end gap-1">
+                                <button onclick="editPixEntry(${index})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="removePixEntry(${index})" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+                
+                lucide.createIcons();
+            }
+        }
+
+        let editingPixIndex = null;
+
+        function showAddPixForm() {
+            document.getElementById('pixForm').classList.remove('hidden');
+            document.getElementById('pixFormTitle').textContent = 'Adicionar Motorista';
+            document.getElementById('pixFormSaveText').textContent = 'Salvar';
+            document.getElementById('pixNome').value = '';
+            document.getElementById('pixChave').value = '';
+            editingPixIndex = null;
+        }
+
+        function editPixEntry(index) {
+            const motorista = pixList[index];
+            document.getElementById('pixForm').classList.remove('hidden');
+            document.getElementById('pixFormTitle').textContent = 'Editar Motorista';
+            document.getElementById('pixFormSaveText').textContent = 'Atualizar';
+            document.getElementById('pixNome').value = motorista.nomeMotorista;
+            document.getElementById('pixChave').value = motorista.chavePix;
+            editingPixIndex = index;
+        }
+
+        function cancelPixForm() {
+            document.getElementById('pixForm').classList.add('hidden');
+            document.getElementById('pixNome').value = '';
+            document.getElementById('pixChave').value = '';
+            editingPixIndex = null;
+        }
+
+        async function savePixEntry() {
+            const nome = document.getElementById('pixNome').value.trim();
+            const chave = document.getElementById('pixChave').value.trim();
+            
+            if (!nome || !chave) {
+                alert('Preencha nome e chave PIX!');
+                return;
+            }
+            
+            await addOrUpdatePixEntry(nome, chave);
+            
+            if (useSharePointPix) {
+                await loadPixFromSharePoint();
+            } else {
+                await loadPixMotoristas();
+            }
+            
+            cancelPixForm();
+        }
+
+        // ========================================
+        // PIX - MATCH COM NOME DE ARQUIVO
+        // ========================================
+
+        function normalizeFileName(name) {
+            return name
+                .toLowerCase()
+                .trim()
+                .replace(/\.pdf$/i, '')
+                .replace(/[_-]/g, ' ')
+                .replace(/\s+/g, ' ');
+        }
+
+        function findPixByFileName(fileName) {
+            const normalized = normalizeFileName(fileName);
+            
+            const motorista = pixList.find(m => {
+                const motNormalized = normalizeFileName(m.nomeMotorista);
+                return motNormalized === normalized || 
+                       normalized.includes(motNormalized) ||
+                       motNormalized.includes(normalized);
+            });
+            
+            return motorista ? motorista.chavePix : '';
         }
 
         lucide.createIcons();
@@ -622,6 +1118,9 @@
                     const contratoMatch = temContrato(file.name);
                     data.temContrato = contratoMatch.match;
                     data.nomeContrato = contratoMatch.contrato;
+                    
+                    // Busca chave PIX
+                    data.chavePix = findPixByFileName(file.name);
                     
                     extractedResults.push(data);
                     renderRow(data);
@@ -998,6 +1497,7 @@
                 <td class="px-3 py-2 ${nfColor}">${row.numeroNF}</td>
                 <td class="px-3 py-2">${contratoIcon}</td>
                 <td class="px-3 py-2 text-[10px] ${modeloColor}">${modeloDisplay}</td>
+                <td class="px-3 py-2 text-xs text-gray-600 truncate max-w-[150px]" title="${row.chavePix || ''}">${row.chavePix || '-'}</td>
             `;
             document.getElementById('resultsBody').appendChild(tr);
             lucide.createIcons();
@@ -1027,18 +1527,21 @@
                     }
 
                     return {
-                        'Nome do Arquivo': row.arquivo,      
-                        'Razão Social': row.prestador,       
-                        'CNPJ Prestador': row.cnpj,          
-                        'Valor Líquido': row.vLiquido,       
-                        'Valor Serviço': row.vServico,       
-                        ' ': '', '  ': '', '   ': '', '    ': '', 
-                        'Data Emissão': dateObj,             
-                        'Número NF': nfNum,                  
-                        'Tem Contrato': row.temContrato ? 'Sim' : 'Não',
-                        'Nome Contrato': row.nomeContrato || '-',
-                        'Modelo': row.modelo,
-                        'Método': row.method || 'Geométrico'
+                        'Nome do Arquivo': row.arquivo,      // A
+                        'Razão Social': row.prestador,       // B
+                        'CNPJ Prestador': row.cnpj,          // C
+                        'Valor Líquido': row.vLiquido,       // D
+                        'Valor Serviço': row.vServico,       // E
+                        ' ': '',                             // F (vazia)
+                        'Chave PIX': row.chavePix || '',     // G (NOVA)
+                        '  ': '',                            // H (vazia)
+                        '   ': '',                           // I (vazia)
+                        'Data Emissão': dateObj,             // J
+                        'Número NF': nfNum,                  // K
+                        'Tem Contrato': row.temContrato ? 'Sim' : 'Não', // L
+                        'Nome Contrato': row.nomeContrato || '-',         // M
+                        'Modelo': row.modelo,                             // N
+                        'Método': row.method || 'Geométrico'              // O
                     };
                 });
                 
@@ -1051,7 +1554,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'Relatorio_NFSe_v28.xlsx';
+                a.download = 'Relatorio_NFSe_v32.xlsx';
                 document.body.appendChild(a);
                 a.click();
                 setTimeout(() => {
@@ -1071,11 +1574,50 @@
             try {
                 await initIndexedDB();
                 await loadContratos();
-                console.log('IndexedDB inicializado com sucesso');
+                await initPixDB();
+                await loadPixMotoristas();
+                console.log('Sistema inicializado com sucesso');
             } catch (error) {
-                console.error('Erro ao inicializar IndexedDB:', error);
-                alert('Erro ao inicializar banco de dados local');
+                console.error('Erro ao inicializar:', error);
+                alert('Erro ao inicializar sistema');
             }
+            
+            // Event listeners PIX
+            const pixDropZone = document.getElementById('dropZonePix');
+            const pixInput = document.getElementById('pixExcelInput');
+            
+            pixDropZone.addEventListener('click', () => pixInput.click());
+            
+            pixDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                pixDropZone.classList.add('border-purple-500', 'bg-purple-100');
+            });
+            
+            pixDropZone.addEventListener('dragleave', () => {
+                pixDropZone.classList.remove('border-purple-500', 'bg-purple-100');
+            });
+            
+            pixDropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                pixDropZone.classList.remove('border-purple-500', 'bg-purple-100');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].name.endsWith('.xlsx')) {
+                    await processPixExcel(files[0]);
+                } else {
+                    alert('Por favor, envie apenas arquivos .xlsx');
+                }
+            });
+            
+            pixInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.xlsx')) {
+                    await processPixExcel(file);
+                } else {
+                    alert('Por favor, selecione um arquivo .xlsx');
+                }
+                pixInput.value = '';
+            });
         })();
     </script>
 </body>
