@@ -40,7 +40,7 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                         Extrator NFSe
                     </h1>
-                    <p class="text-sm text-gray-500 mt-0.5">v33.0 - Downloads ZIP/Excel</p>
+                    <p class="text-sm text-gray-500 mt-0.5">v33.1 - Fix SharePoint</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -308,10 +308,8 @@
                 spAccessToken = null;
                 spAccount = null;
                 document.getElementById('spText').textContent = 'SharePoint';
-                document.getElementById('btnSharePoint').classList.remove('bg-green-600', 'hover:bg-green-700');
-                document.getElementById('btnSharePoint').classList.add('bg-blue-600', 'hover:bg-blue-700');
-                // Trocar ícone de volta para cloud
-                document.querySelector('#btnSharePoint i').setAttribute('data-lucide', 'cloud');
+                document.getElementById('btnSharePoint').classList.remove('bg-green-600');
+                document.getElementById('btnSharePoint').classList.add('bg-blue-600');
                 await loadContratos(); // Voltar para local
                 await loadPixMotoristas(); // Voltar PIX local
                 
@@ -333,10 +331,8 @@
                     useSharePoint = true;
                     useSharePointPix = true;
                     document.getElementById('spText').textContent = 'SharePoint';
-                    document.getElementById('btnSharePoint').classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    document.getElementById('btnSharePoint').classList.add('bg-green-600', 'hover:bg-green-700');
-                    // Trocar ícone para check
-                    document.querySelector('#btnSharePoint i').setAttribute('data-lucide', 'check');
+                    document.getElementById('btnSharePoint').classList.remove('bg-blue-600');
+                    document.getElementById('btnSharePoint').classList.add('bg-green-600');
                     await loadContratosFromSharePoint();
                     await loadPixFromSharePoint();
                     
