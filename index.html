@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v35.3</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v36.0</p>
                     </div>
                 </div>
                 
@@ -1646,23 +1646,26 @@
                 data.vServico = parseFloat(servMatch[1].replace(/\./g,'').replace(',','.'));
             }
             
-            const cbsIndex = fullText.indexOf('CBS');
-            if(cbsIndex !== -1) {
-                const afterCBS = fullText.substring(cbsIndex);
-                const allValuesAfterCBS = afterCBS.match(/([\d.]+,\d{2})/g);
-                if(allValuesAfterCBS && allValuesAfterCBS.length >= 2) {
-                    const liquidoStr = allValuesAfterCBS[1];
-                    data.vLiquido = parseFloat(liquidoStr.replace(/\./g,'').replace(',','.'));
-                }
+            // Buscar Valor Líquido com padrão mais flexível
+            const liqMatch = fullText.match(/[\(=\s]*Valor\s*L[íi]quido[\s:]*R\$[\s]*([\d.]+,\d{2})/i);
+            if(liqMatch) {
+                data.vLiquido = parseFloat(liqMatch[1].replace(/\./g,'').replace(',','.'));
             }
             
+            // Fallback: buscar após CBS
             if(!data.vLiquido) {
-                const liqDirect = fullText.match(/Valor\s*L[ií]quido[\s\S]*?([\d.]+,\d{2})/i);
-                if(liqDirect) {
-                    data.vLiquido = parseFloat(liqDirect[1].replace(/\./g,'').replace(',','.'));
+                const cbsIndex = fullText.indexOf('CBS');
+                if(cbsIndex !== -1) {
+                    const afterCBS = fullText.substring(cbsIndex);
+                    const allValuesAfterCBS = afterCBS.match(/([\d.]+,\d{2})/g);
+                    if(allValuesAfterCBS && allValuesAfterCBS.length >= 2) {
+                        const liquidoStr = allValuesAfterCBS[1];
+                        data.vLiquido = parseFloat(liquidoStr.replace(/\./g,'').replace(',','.'));
+                    }
                 }
             }
             
+            // Último fallback: se ainda não encontrou, usar vServico
             if(!data.vLiquido && data.vServico) {
                 data.vLiquido = data.vServico;
             }
