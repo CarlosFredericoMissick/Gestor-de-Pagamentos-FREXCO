@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v37.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v38.0</p>
                     </div>
                 </div>
                 
@@ -116,8 +116,8 @@
                     class="hidden flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all-smooth text-sm hover:shadow-md disabled:opacity-50">
                     <i data-lucide="download" class="w-4 h-4"></i> Excel
                 </button>
-                <button onclick="location.reload()" class="ml-auto text-gray-600 hover:text-red-600 font-medium px-3 py-2 text-sm transition-colors">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <button onclick="clearResults()" title="Apagar notas salvas" class="ml-auto flex items-center gap-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 font-medium px-3 py-2 rounded-lg text-sm transition-colors border border-transparent hover:border-red-200">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Limpar
                 </button>
             </div>
         </header>
@@ -364,6 +364,44 @@
         let filesQueue = [];
         let extractedResults = [];
         let isProcessing = false;
+
+        const STORAGE_KEY = 'frexco_nfse_results';
+
+        function saveResultsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(extractedResults));
+            } catch(e) {
+                console.warn('Não foi possível salvar no localStorage:', e);
+            }
+        }
+
+        function loadResultsFromStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (!Array.isArray(saved) || saved.length === 0) return;
+                extractedResults = saved;
+                saved.forEach(row => renderRow(row));
+                updateCoverageStats();
+                document.getElementById('btnExport').classList.remove('hidden');
+                document.getElementById('btnExport').disabled = false;
+                console.log(`✅ ${saved.length} nota(s) restauradas do armazenamento local.`);
+            } catch(e) {
+                console.warn('Erro ao carregar resultados salvos:', e);
+            }
+        }
+
+        function clearResults() {
+            if (extractedResults.length === 0) return;
+            if (!confirm(`Apagar ${extractedResults.length} nota(s) salva(s)? Esta ação não pode ser desfeita.`)) return;
+            extractedResults = [];
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('btnExport').classList.add('hidden');
+            document.getElementById('btnExport').disabled = true;
+            updateCoverageStats();
+        }
         let contratosDB = null;
         let contratosList = [];
         
@@ -1375,6 +1413,7 @@
 
             // Atualizar estatísticas
             updateCoverageStats();
+            saveResultsToStorage();
 
             console.log(`✅ Reprocessamento concluído!`);
             console.log(`   Contratos encontrados: ${contratosAtualizados}`);
@@ -1454,11 +1493,14 @@
                     
                     extractedResults.push(data);
                     renderRow(data);
+                    saveResultsToStorage();
 
                 } catch (e) {
                     console.error(e);
-                    extractedResults.push({ arquivo: file.name, prestador: "ERRO", status: "Erro", method: "Erro", temContrato: false });
-                    renderRow({ arquivo: file.name, prestador: "ERRO", numeroNF: "?", method: "Erro", temContrato: false });
+                    const errData = { arquivo: file.name, prestador: "ERRO", status: "Erro", method: "Erro", temContrato: false, numeroNF: "?" };
+                    extractedResults.push(errData);
+                    renderRow(errData);
+                    saveResultsToStorage();
                 }
             }
             
@@ -1641,56 +1683,31 @@
             const cnpjs = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g);
             if(cnpjs && cnpjs.length > 0) data.cnpj = cnpjs[0];
 
-            // === DEBUG: ver linhas extraídas do PDF ===
-            console.log("=== PIEDADE LINHAS EXTRAÍDAS ===");
-            lines.forEach((l, i) => { if(l.trim()) console.log(`[${i}] ${l}`); });
-
-            // Helper: extrai o primeiro valor monetário (ex: 33.600,00) de uma string
-            function extractMoney(str) {
-                const m = str.match(/([\d]{1,3}(?:\.[\d]{3})*,\d{2})/);
-                return m ? parseFloat(m[1].replace(/\./g,'').replace(',','.')) : null;
+            const servMatch = fullText.match(/Valor\s*do[s]?\s*Serviço[s]?\s*R\$[\s\S]*?([\d.,]+)/i);
+            if(servMatch) {
+                data.vServico = parseFloat(servMatch[1].replace(/\./g,'').replace(',','.'));
             }
-
-            // --- Valor dos Serviços ---
-            // Busca linha que contenha "ervi" (cobre Serviço/Servico com qualquer encoding)
-            // e extrai o valor da mesma linha ou da próxima
-            for(let i = 0; i < lines.length; i++) {
-                if(/ervi[çc]/i.test(lines[i]) && /Valor/i.test(lines[i])) {
-                    const val = extractMoney(lines[i]);
-                    if(val) { data.vServico = val; break; }
-                    // valor pode estar na próxima linha
-                    if(i+1 < lines.length) {
-                        const val2 = extractMoney(lines[i+1]);
-                        if(val2) { data.vServico = val2; break; }
-                    }
-                }
+            
+            // Buscar Valor Líquido com padrão mais flexível
+            const liqMatch = fullText.match(/[\(=\s]*Valor\s*L[íi]quido[\s:]*R\$[\s]*([\d.]+,\d{2})/i);
+            if(liqMatch) {
+                data.vLiquido = parseFloat(liqMatch[1].replace(/\./g,'').replace(',','.'));
             }
-            // fallback regex no fullText
-            if(!data.vServico) {
-                const sm = fullText.match(/Valor\s*d[eo]s?\s*Servi[\s\S]{0,20}?([\d]{1,3}(?:\.[\d]{3})*,\d{2})/i);
-                if(sm) data.vServico = parseFloat(sm[1].replace(/\./g,'').replace(',','.'));
-            }
-
-            // --- Valor Líquido ---
-            // "quido" é a parte invariante de Líquido/Liquido independente de encoding
-            for(let i = 0; i < lines.length; i++) {
-                if(/quido/i.test(lines[i])) {
-                    // tenta extrair da mesma linha
-                    const val = extractMoney(lines[i]);
-                    if(val) { data.vLiquido = val; break; }
-                    // valor pode estar na próxima linha
-                    if(i+1 < lines.length) {
-                        const val2 = extractMoney(lines[i+1]);
-                        if(val2) { data.vLiquido = val2; break; }
-                    }
-                }
-            }
-            // fallback regex no fullText (permite qualquer coisa entre "quido" e o número)
+            
+            // Fallback: buscar após CBS
             if(!data.vLiquido) {
-                const lm = fullText.match(/quido[\s\S]{0,40}?([\d]{1,3}(?:\.[\d]{3})*,\d{2})/i);
-                if(lm) data.vLiquido = parseFloat(lm[1].replace(/\./g,'').replace(',','.'));
+                const cbsIndex = fullText.indexOf('CBS');
+                if(cbsIndex !== -1) {
+                    const afterCBS = fullText.substring(cbsIndex);
+                    const allValuesAfterCBS = afterCBS.match(/([\d.]+,\d{2})/g);
+                    if(allValuesAfterCBS && allValuesAfterCBS.length >= 2) {
+                        const liquidoStr = allValuesAfterCBS[1];
+                        data.vLiquido = parseFloat(liquidoStr.replace(/\./g,'').replace(',','.'));
+                    }
+                }
             }
-            // último fallback: usar vServico
+            
+            // Último fallback: se ainda não encontrou, usar vServico
             if(!data.vLiquido && data.vServico) {
                 data.vLiquido = data.vServico;
             }
@@ -2029,6 +2046,7 @@
                 await loadContratos();
                 await initPixDB();
                 await loadPixMotoristas();
+                loadResultsFromStorage();
                 console.log('Sistema inicializado com sucesso');
             } catch (error) {
                 console.error('Erro ao inicializar:', error);
