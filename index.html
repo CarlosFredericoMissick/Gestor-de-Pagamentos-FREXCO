@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v36.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v37.0</p>
                     </div>
                 </div>
                 
@@ -1641,13 +1641,13 @@
             const cnpjs = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g);
             if(cnpjs && cnpjs.length > 0) data.cnpj = cnpjs[0];
 
-            const servMatch = fullText.match(/Valor\s*do[s]?\s*Serviço[s]?\s*R\$[\s\S]*?([\d.,]+)/i);
+            const servMatch = fullText.match(/Valor\s*do[s]?\s*Servi[çc][o]?\s*[s]?\s*R\$[\s]*([\d.]+,\d{2})/i);
             if(servMatch) {
                 data.vServico = parseFloat(servMatch[1].replace(/\./g,'').replace(',','.'));
             }
             
-            // Buscar Valor Líquido com padrão mais flexível
-            const liqMatch = fullText.match(/[\(=\s]*Valor\s*L[íi]quido[\s:]*R\$[\s]*([\d.]+,\d{2})/i);
+            // Buscar Valor Líquido - padrão cobre "(=) Valor Líquido R$" e variações
+            const liqMatch = fullText.match(/Valor\s*L[íi\u00ed]quido[\s:]*R\$[\s]*([\d.]+,\d{2})/i);
             if(liqMatch) {
                 data.vLiquido = parseFloat(liqMatch[1].replace(/\./g,'').replace(',','.'));
             }
