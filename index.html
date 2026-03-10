@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v40.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v41.0</p>
                     </div>
                 </div>
                 
@@ -781,7 +781,7 @@
                 await deletePixMotorista(motorista.id);
                 await loadPixMotoristas();
             }
-        }
+            reprocessExtractedResults();
 
         // ========================================
         // PIX - UPLOAD EXCEL
@@ -834,6 +834,7 @@
                 } else {
                     await loadPixMotoristas();
                 }
+                reprocessExtractedResults();
             } catch (error) {
                 console.error('Erro ao processar Excel:', error);
                 alert('Erro ao processar planilha Excel!');
@@ -940,6 +941,7 @@
             }
             
             cancelPixForm();
+            reprocessExtractedResults();
         }
 
         // ========================================
@@ -957,25 +959,9 @@
                 .trim();
         }
 
-        // Verifica se 'needle' bate como frase completa dentro de 'haystack'
-        // Evita que "daniel" case com "daniel de santana"
-        function matchesWholePhrase(needle, haystack) {
-            if (needle === haystack) return true;
-            const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            return new RegExp('(?:^|\\s)' + escaped + '(?:\\s|$)').test(haystack);
-        }
-
         function findPixByFileName(fileName) {
             const normalized = normalizeFileName(fileName);
-            
-            const motorista = pixList.find(m => {
-                const motNormalized = normalizeFileName(m.nomeMotorista);
-                // Match exato OU o nome do motorista aparece como frase completa no nome do arquivo
-                return motNormalized === normalized ||
-                       matchesWholePhrase(motNormalized, normalized) ||
-                       matchesWholePhrase(normalized, motNormalized);
-            });
-            
+            const motorista = pixList.find(m => normalizeFileName(m.nomeMotorista) === normalized);
             return motorista ? motorista.chavePix : '';
         }
 
@@ -1309,6 +1295,7 @@
                                 const base64 = e.target.result;
                                 await saveContrato(file.name, base64);
                                 await loadContratos();
+                                reprocessExtractedResults();
                             };
                             reader.readAsDataURL(file);
                         } catch (error) {
@@ -1329,6 +1316,7 @@
                         await deleteContrato(id);
                         await loadContratos();
                     }
+                    reprocessExtractedResults();
                 } catch (error) {
                     console.error('Erro ao excluir contrato:', error);
                     alert('Erro ao excluir contrato');
@@ -1363,19 +1351,11 @@
 
         function temContrato(nomeArquivoNota) {
             const notaNormalizada = normalizeFileName(nomeArquivoNota);
-            
             for (const contrato of contratosList) {
-                const contratoNormalizado = normalizeFileName(contrato.nomeArquivo);
-                
-                if (notaNormalizada === contratoNormalizado) {
-                    return { match: true, contrato: contrato.nomeArquivo };
-                }
-                if (matchesWholePhrase(contratoNormalizado, notaNormalizada) ||
-                    matchesWholePhrase(notaNormalizada, contratoNormalizado)) {
+                if (normalizeFileName(contrato.nomeArquivo) === notaNormalizada) {
                     return { match: true, contrato: contrato.nomeArquivo };
                 }
             }
-            
             return { match: false, contrato: null };
         }
 
