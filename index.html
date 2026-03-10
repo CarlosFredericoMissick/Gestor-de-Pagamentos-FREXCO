@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v39.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v40.0</p>
                     </div>
                 </div>
                 
@@ -950,9 +950,19 @@
             return name
                 .toLowerCase()
                 .trim()
-                .replace(/\.pdf$/i, '')
+                .replace(/\.[^.]+$/, '')       // remove qualquer extensão (.pdf, .png, etc)
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
                 .replace(/[_-]/g, ' ')
-                .replace(/\s+/g, ' ');
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // Verifica se 'needle' bate como frase completa dentro de 'haystack'
+        // Evita que "daniel" case com "daniel de santana"
+        function matchesWholePhrase(needle, haystack) {
+            if (needle === haystack) return true;
+            const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp('(?:^|\\s)' + escaped + '(?:\\s|$)').test(haystack);
         }
 
         function findPixByFileName(fileName) {
@@ -960,9 +970,10 @@
             
             const motorista = pixList.find(m => {
                 const motNormalized = normalizeFileName(m.nomeMotorista);
-                return motNormalized === normalized || 
-                       normalized.includes(motNormalized) ||
-                       motNormalized.includes(normalized);
+                // Match exato OU o nome do motorista aparece como frase completa no nome do arquivo
+                return motNormalized === normalized ||
+                       matchesWholePhrase(motNormalized, normalized) ||
+                       matchesWholePhrase(normalized, motNormalized);
             });
             
             return motorista ? motorista.chavePix : '';
@@ -1351,20 +1362,16 @@
         // ========================================
 
         function temContrato(nomeArquivoNota) {
-            // Remove extensão e normaliza
-            const notaNormalizada = nomeArquivoNota.replace('.pdf', '').toLowerCase().trim();
+            const notaNormalizada = normalizeFileName(nomeArquivoNota);
             
-            // Procura match exato ou parcial
             for (const contrato of contratosList) {
-                const contratoNormalizado = contrato.nomeArquivo.replace('.pdf', '').toLowerCase().trim();
+                const contratoNormalizado = normalizeFileName(contrato.nomeArquivo);
                 
-                // Match exato
                 if (notaNormalizada === contratoNormalizado) {
                     return { match: true, contrato: contrato.nomeArquivo };
                 }
-                
-                // Match parcial (nota contém contrato ou contrato contém nota)
-                if (notaNormalizada.includes(contratoNormalizado) || contratoNormalizado.includes(notaNormalizada)) {
+                if (matchesWholePhrase(contratoNormalizado, notaNormalizada) ||
+                    matchesWholePhrase(notaNormalizada, contratoNormalizado)) {
                     return { match: true, contrato: contrato.nomeArquivo };
                 }
             }
