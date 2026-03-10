@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v42.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v43.0</p>
                     </div>
                 </div>
                 
@@ -594,11 +594,7 @@
                     }
                 );
                 
-                if (response.ok || response.status === 204) {
-                    await loadContratosFromSharePoint();
-                    return true;
-                }
-                return false;
+                return response.ok || response.status === 204;
             } catch (error) {
                 console.error('Erro delete SharePoint:', error);
                 return false;
@@ -1248,7 +1244,7 @@
                         <button onclick="viewContrato(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Visualizar">
                             <i data-lucide="eye" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="removeContrato(${contrato.id}, ${isFromSP})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                        <button onclick="removeContrato('${contrato.id}', ${isFromSP})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -1289,17 +1285,26 @@
             if (!confirm(`Excluir ${checked.length} contrato(s) selecionado(s)?`)) return;
 
             const indices = Array.from(checked).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+            let hasSharePoint = false;
+
             for (const index of indices) {
                 const contrato = contratosList[index];
                 try {
                     if (useSharePoint && contrato.fromSharePoint) {
                         await deleteFromSharePoint(contrato.id);
+                        hasSharePoint = true;
                     } else {
                         await deleteContrato(contrato.id);
                     }
                 } catch(e) { console.error('Erro ao excluir contrato:', e); }
             }
-            await loadContratos();
+
+            // Um único reload ao final
+            if (hasSharePoint) {
+                await loadContratosFromSharePoint();
+            } else {
+                await loadContratos();
+            }
             reprocessExtractedResults();
         }
 
@@ -1432,6 +1437,8 @@
                         const success = await uploadToSharePoint(file);
                         if (!success) {
                             alert(`Erro ao enviar ${file.name} para SharePoint`);
+                        } else {
+                            reprocessExtractedResults();
                         }
                     } else {
                         try {
@@ -1457,6 +1464,7 @@
                 try {
                     if (useSharePoint && isFromSharePoint) {
                         await deleteFromSharePoint(id);
+                        await loadContratosFromSharePoint();
                     } else {
                         await deleteContrato(id);
                         await loadContratos();
