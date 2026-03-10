@@ -83,7 +83,7 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v41.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v42.0</p>
                     </div>
                 </div>
                 
@@ -186,6 +186,16 @@
                     <div class="text-xl font-bold text-green-800 leading-tight" id="totalServicoValue">R$ 0,00</div>
                     <div class="text-xs text-green-700 mt-1" id="totalServicoCount">0 notas</div>
                 </div>
+
+                <!-- Card Cobertura PIX -->
+                <div id="pixCoveragePanel" class="hidden bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-purple-900">Cobertura PIX</span>
+                        <i data-lucide="key" class="w-4 h-4 text-purple-600"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-purple-700" id="pixCoveragePercent">0%</div>
+                    <div class="text-xs text-purple-600 mt-1" id="pixCoverageText">0 de 0 com PIX</div>
+                </div>
                 
                 <div id="statusPanel" class="hidden p-4 bg-primary/10 border border-primary/30 rounded-lg text-xs">
                     <p id="statusText" class="font-bold text-primary-dark mb-2">Aguardando...</p>
@@ -267,10 +277,21 @@
                             <i data-lucide="list" class="w-4 h-4"></i>
                             Contratos Salvos (<span id="contratosSavedCount">0</span>)
                         </h3>
-                        <button onclick="downloadAllContratosZip()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm" title="Baixar todos os contratos em um arquivo ZIP">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            Baixar Todos (.zip)
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="btnDeleteSelectedContratos" onclick="deleteSelectedContratos()" class="hidden flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                Excluir Selecionados (<span id="contratosSelectedCount">0</span>)
+                            </button>
+                            <button onclick="downloadAllContratosZip()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Baixar Todos (.zip)
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Selecionar todos -->
+                    <div id="contratosSelectAllBar" class="hidden items-center gap-2 mb-2 px-3 py-2 bg-gray-100 rounded-lg">
+                        <input type="checkbox" id="selectAllContratos" onchange="toggleSelectAllContratos(this.checked)" class="w-4 h-4 accent-frexco cursor-pointer">
+                        <label for="selectAllContratos" class="text-xs font-semibold text-gray-600 cursor-pointer">Selecionar todos</label>
                     </div>
                     <div id="contratosListContainer" class="space-y-2 max-h-[400px] overflow-y-auto">
                         <!-- Contratos serão listados aqui -->
@@ -359,15 +380,27 @@
                             <i data-lucide="users" class="w-4 h-4"></i>
                             Motoristas Cadastrados (<span id="pixSavedCount">0</span>)
                         </h3>
-                        <button onclick="exportPixToExcel()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm" title="Exportar todos os motoristas para Excel">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                            Exportar Planilha
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="btnDeleteSelectedPix" onclick="deleteSelectedPix()" class="hidden flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                Excluir Selecionados (<span id="pixSelectedCount">0</span>)
+                            </button>
+                            <button onclick="exportPixToExcel()" class="flex items-center gap-2 bg-frexco hover:bg-frexco-dark text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-sm">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                Exportar Planilha
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Selecionar todos -->
+                    <div id="pixSelectAllBar" class="hidden items-center gap-2 mb-2 px-3 py-2 bg-gray-100 rounded-lg">
+                        <input type="checkbox" id="selectAllPix" onchange="toggleSelectAllPix(this.checked)" class="w-4 h-4 accent-frexco cursor-pointer">
+                        <label for="selectAllPix" class="text-xs font-semibold text-gray-600 cursor-pointer">Selecionar todos</label>
                     </div>
                     <div class="bg-gray-50 rounded-lg p-2 mb-2">
                         <div class="grid grid-cols-12 gap-2 text-xs font-bold text-gray-600 px-3 py-2">
                             <div class="col-span-1"></div>
-                            <div class="col-span-5">Nome do Motorista</div>
+                            <div class="col-span-1"></div>
+                            <div class="col-span-4">Nome do Motorista</div>
                             <div class="col-span-4">Chave PIX</div>
                             <div class="col-span-2 text-right">Ações</div>
                         </div>
@@ -860,40 +893,98 @@
             document.getElementById('pixSavedCount').textContent = pixList.length;
             
             const container = document.getElementById('pixListContainer');
+            const selectAllBar = document.getElementById('pixSelectAllBar');
             
             if (pixList.length === 0) {
                 container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">Nenhum motorista cadastrado</p>';
-            } else {
-                container.innerHTML = pixList.map((motorista, index) => {
-                    const icon = useSharePointPix ? 'cloud' : 'hard-drive';
-                    const iconColor = useSharePointPix ? 'text-blue-600' : 'text-gray-600';
-                    
-                    return `
-                    <div class="bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
-                        <div class="grid grid-cols-12 gap-2 items-center px-3 py-3">
-                            <div class="col-span-1 flex justify-center">
-                                <i data-lucide="${icon}" class="w-4 h-4 ${iconColor}"></i>
-                            </div>
-                            <div class="col-span-5">
-                                <p class="text-sm font-medium text-gray-900 truncate" title="${motorista.nomeMotorista}">${motorista.nomeMotorista}</p>
-                            </div>
-                            <div class="col-span-4">
-                                <p class="text-sm text-gray-600 truncate" title="${motorista.chavePix}">${motorista.chavePix}</p>
-                            </div>
-                            <div class="col-span-2 flex justify-end gap-1">
-                                <button onclick="editPixEntry(${index})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="removePixEntry(${index})" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
+                selectAllBar.classList.add('hidden');
+                selectAllBar.classList.remove('flex');
+                updatePixSelectionUI();
+                return;
+            }
+
+            selectAllBar.classList.remove('hidden');
+            selectAllBar.classList.add('flex');
+
+            container.innerHTML = pixList.map((motorista, index) => {
+                const icon = useSharePointPix ? 'cloud' : 'hard-drive';
+                const iconColor = useSharePointPix ? 'text-blue-600' : 'text-gray-600';
+                
+                return `
+                <div class="bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+                    <div class="grid grid-cols-12 gap-2 items-center px-3 py-3">
+                        <div class="col-span-1 flex justify-center">
+                            <input type="checkbox" class="pix-checkbox w-4 h-4 accent-red-500 cursor-pointer"
+                                   data-index="${index}" onchange="onPixCheckChange()">
+                        </div>
+                        <div class="col-span-1 flex justify-center">
+                            <i data-lucide="${icon}" class="w-4 h-4 ${iconColor}"></i>
+                        </div>
+                        <div class="col-span-4">
+                            <p class="text-sm font-medium text-gray-900 truncate" title="${motorista.nomeMotorista}">${motorista.nomeMotorista}</p>
+                        </div>
+                        <div class="col-span-4">
+                            <p class="text-sm text-gray-600 truncate" title="${motorista.chavePix}">${motorista.chavePix}</p>
+                        </div>
+                        <div class="col-span-2 flex justify-end gap-1">
+                            <button onclick="editPixEntry(${index})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="removePixEntry(${index})" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
                         </div>
                     </div>
-                `}).join('');
-                
-                lucide.createIcons();
+                </div>
+            `}).join('');
+            
+            lucide.createIcons();
+            updatePixSelectionUI();
+        }
+
+        function onPixCheckChange() {
+            const all = document.querySelectorAll('.pix-checkbox');
+            const checked = document.querySelectorAll('.pix-checkbox:checked');
+            document.getElementById('selectAllPix').checked = all.length > 0 && checked.length === all.length;
+            document.getElementById('selectAllPix').indeterminate = checked.length > 0 && checked.length < all.length;
+            updatePixSelectionUI();
+        }
+
+        function toggleSelectAllPix(checked) {
+            document.querySelectorAll('.pix-checkbox').forEach(cb => cb.checked = checked);
+            updatePixSelectionUI();
+        }
+
+        function updatePixSelectionUI() {
+            const checked = document.querySelectorAll('.pix-checkbox:checked');
+            const btn = document.getElementById('btnDeleteSelectedPix');
+            if (checked.length > 0) {
+                btn.classList.remove('hidden');
+                document.getElementById('pixSelectedCount').textContent = checked.length;
+            } else {
+                btn.classList.add('hidden');
             }
+        }
+
+        async function deleteSelectedPix() {
+            const checked = document.querySelectorAll('.pix-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm(`Excluir ${checked.length} motorista(s) selecionado(s)?`)) return;
+
+            const indices = Array.from(checked).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+            
+            if (useSharePointPix) {
+                indices.forEach(i => pixList.splice(i, 1));
+                await savePixToSharePoint();
+                await loadPixFromSharePoint();
+            } else {
+                for (const index of indices) {
+                    const motorista = pixList[index];
+                    await deletePixMotorista(motorista.id);
+                }
+                await loadPixMotoristas();
+            }
+            reprocessExtractedResults();
         }
 
         let editingPixIndex = null;
@@ -1125,38 +1216,91 @@
             document.getElementById('contratosSavedCount').textContent = contratosList.length;
             
             const container = document.getElementById('contratosListContainer');
+            const selectAllBar = document.getElementById('contratosSelectAllBar');
             
             if (contratosList.length === 0) {
                 container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">Nenhum contrato salvo</p>';
-            } else {
-                container.innerHTML = contratosList.map((contrato, index) => {
-                    const isFromSP = contrato.fromSharePoint || false;
-                    const icon = isFromSP ? 'cloud' : 'hard-drive';
-                    const iconColor = isFromSP ? 'text-blue-600' : 'text-gray-600';
-                    const label = isFromSP ? 'SharePoint' : 'Local';
-                    
-                    return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <i data-lucide="${icon}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
-                            <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium text-gray-900 truncate" title="${contrato.nomeArquivo}">${contrato.nomeArquivo}</p>
-                                <p class="text-xs text-gray-500">${new Date(contrato.dataUpload).toLocaleDateString('pt-BR')} • ${label}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="viewContrato(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Visualizar">
-                                <i data-lucide="eye" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="removeContrato(${contrato.id}, ${isFromSP})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                `}).join('');
-                
-                lucide.createIcons();
+                selectAllBar.classList.add('hidden');
+                selectAllBar.classList.remove('flex');
+                updateContratosSelectionUI();
+                return;
             }
+
+            selectAllBar.classList.remove('hidden');
+            selectAllBar.classList.add('flex');
+
+            container.innerHTML = contratosList.map((contrato, index) => {
+                const isFromSP = contrato.fromSharePoint || false;
+                const icon = isFromSP ? 'cloud' : 'hard-drive';
+                const iconColor = isFromSP ? 'text-blue-600' : 'text-gray-600';
+                const label = isFromSP ? 'SharePoint' : 'Local';
+                
+                return `
+                <div class="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors" id="contrato-row-${index}">
+                    <input type="checkbox" class="contrato-checkbox w-4 h-4 accent-red-500 cursor-pointer flex-shrink-0" 
+                           data-index="${index}" onchange="onContratoCheckChange()">
+                    <i data-lucide="${icon}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-medium text-gray-900 truncate" title="${contrato.nomeArquivo}">${contrato.nomeArquivo}</p>
+                        <p class="text-xs text-gray-500">${new Date(contrato.dataUpload).toLocaleDateString('pt-BR')} • ${label}</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button onclick="viewContrato(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Visualizar">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="removeContrato(${contrato.id}, ${isFromSP})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+            
+            lucide.createIcons();
+            updateContratosSelectionUI();
+        }
+
+        function onContratoCheckChange() {
+            const all = document.querySelectorAll('.contrato-checkbox');
+            const checked = document.querySelectorAll('.contrato-checkbox:checked');
+            document.getElementById('selectAllContratos').checked = all.length > 0 && checked.length === all.length;
+            document.getElementById('selectAllContratos').indeterminate = checked.length > 0 && checked.length < all.length;
+            updateContratosSelectionUI();
+        }
+
+        function toggleSelectAllContratos(checked) {
+            document.querySelectorAll('.contrato-checkbox').forEach(cb => cb.checked = checked);
+            updateContratosSelectionUI();
+        }
+
+        function updateContratosSelectionUI() {
+            const checked = document.querySelectorAll('.contrato-checkbox:checked');
+            const btn = document.getElementById('btnDeleteSelectedContratos');
+            if (checked.length > 0) {
+                btn.classList.remove('hidden');
+                document.getElementById('contratosSelectedCount').textContent = checked.length;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        async function deleteSelectedContratos() {
+            const checked = document.querySelectorAll('.contrato-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm(`Excluir ${checked.length} contrato(s) selecionado(s)?`)) return;
+
+            const indices = Array.from(checked).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+            for (const index of indices) {
+                const contrato = contratosList[index];
+                try {
+                    if (useSharePoint && contrato.fromSharePoint) {
+                        await deleteFromSharePoint(contrato.id);
+                    } else {
+                        await deleteContrato(contrato.id);
+                    }
+                } catch(e) { console.error('Erro ao excluir contrato:', e); }
+            }
+            await loadContratos();
+            reprocessExtractedResults();
         }
 
         async function viewContrato(index) {
@@ -1367,6 +1511,7 @@
                 document.getElementById('statsPanel').classList.add('hidden');
                 document.getElementById('totalLiquidoPanel').classList.add('hidden');
                 document.getElementById('totalServicoPanel').classList.add('hidden');
+                document.getElementById('pixCoveragePanel').classList.add('hidden');
                 return;
             }
 
@@ -1389,6 +1534,12 @@
             document.getElementById('totalServicoPanel').classList.remove('hidden');
             document.getElementById('totalServicoValue').textContent = fmtMoney(totalServico);
             document.getElementById('totalServicoCount').textContent = label;
+
+            const notasComPix = extractedResults.filter(r => r.chavePix && r.chavePix.trim() !== '').length;
+            const pixPct = Math.round((notasComPix / totalNotas) * 100);
+            document.getElementById('pixCoveragePanel').classList.remove('hidden');
+            document.getElementById('pixCoveragePercent').textContent = `${pixPct}%`;
+            document.getElementById('pixCoverageText').textContent = `${notasComPix} de ${totalNotas} com PIX`;
         }
 
         // ========================================
