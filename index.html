@@ -83,15 +83,22 @@
                         <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">
                             Gestor de Pagamentos
                         </h1>
-                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v44.0</p>
+                        <p class="text-white/90 text-xs md:text-sm font-medium">Extrator NFSe • v45.0</p>
                     </div>
                 </div>
                 
                 <!-- Indicador SharePoint -->
                 <div id="spIndicator" class="hidden">
-                    <div class="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/30">
-                        <div class="w-2 h-2 bg-white rounded-full badge-connected"></div>
-                        <span class="text-white text-sm font-semibold">SharePoint Conectado</span>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/30">
+                            <div class="w-2 h-2 bg-white rounded-full badge-connected"></div>
+                            <span class="text-white text-sm font-semibold">SharePoint Conectado</span>
+                        </div>
+                        <button onclick="refreshSharePoint()" title="Atualizar dados do SharePoint"
+                            class="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold transition-all">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            Atualizar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -288,6 +295,25 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Form editar contrato (hidden por padrão) -->
+                    <div id="contratoForm" class="hidden mb-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="text-sm font-bold text-gray-700 mb-3">Renomear Contrato</h4>
+                        <div class="mb-3">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nome do Arquivo</label>
+                            <input type="text" id="contratoNomeInput" placeholder="Ex: sp_transportes_fevereiro.pdf"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-frexco/40 focus:border-frexco outline-none">
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button onclick="cancelContratoForm()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition-all">
+                                Cancelar
+                            </button>
+                            <button onclick="saveContratoRename()" class="px-4 py-2 bg-frexco hover:bg-frexco-dark text-white rounded-lg text-sm font-semibold transition-all">
+                                Salvar
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Busca -->
                     <div class="relative mb-3">
                         <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
@@ -299,7 +325,7 @@
                         <input type="checkbox" id="selectAllContratos" onchange="toggleSelectAllContratos(this.checked)" class="w-4 h-4 accent-frexco cursor-pointer">
                         <label for="selectAllContratos" class="text-xs font-semibold text-gray-600 cursor-pointer">Selecionar todos</label>
                     </div>
-                    <div id="contratosListContainer" class="space-y-2 max-h-[360px] overflow-y-auto">
+                    <div id="contratosListContainer" class="space-y-2 max-h-[320px] overflow-y-auto">
                         <!-- Contratos serão listados aqui -->
                     </div>
                 </div>
@@ -537,8 +563,24 @@
             lucide.createIcons();
         }
 
+        async function refreshSharePoint() {
+            if (!useSharePoint || !spAccessToken) return;
+            const btn = document.querySelector('[onclick="refreshSharePoint()"] i');
+            if (btn) btn.style.animation = 'spin 1s linear infinite';
+            try {
+                await loadContratosFromSharePoint();
+                await loadPixFromSharePoint();
+                reprocessExtractedResults();
+                console.log('✅ SharePoint atualizado');
+            } catch(e) {
+                console.error('Erro ao atualizar SharePoint:', e);
+                alert('Erro ao atualizar dados do SharePoint.');
+            } finally {
+                if (btn) btn.style.animation = '';
+            }
+        }
+
         async function loadContratosFromSharePoint() {
-            if (!spAccessToken) return;
             
             try {
                 const response = await fetch(
@@ -1299,7 +1341,10 @@
                         <p class="text-xs text-gray-500">${new Date(contrato.dataUpload).toLocaleDateString('pt-BR')} • ${label}</p>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <button onclick="viewContrato(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Visualizar">
+                        <button onclick="editContrato(${index})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar nome">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="viewContrato(${index})" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Visualizar">
                             <i data-lucide="eye" class="w-4 h-4"></i>
                         </button>
                         <button onclick="removeContrato('${contrato.id}', ${isFromSP})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
@@ -1366,9 +1411,75 @@
             reprocessExtractedResults();
         }
 
+        let editingContratoIndex = null;
+
+        function editContrato(index) {
+            editingContratoIndex = index;
+            const contrato = contratosList[index];
+            document.getElementById('contratoNomeInput').value = contrato.nomeArquivo;
+            document.getElementById('contratoForm').classList.remove('hidden');
+            document.getElementById('contratoNomeInput').focus();
+        }
+
+        function cancelContratoForm() {
+            editingContratoIndex = null;
+            document.getElementById('contratoForm').classList.add('hidden');
+            document.getElementById('contratoNomeInput').value = '';
+        }
+
+        async function saveContratoRename() {
+            if (editingContratoIndex === null) return;
+            const novoNome = document.getElementById('contratoNomeInput').value.trim();
+            if (!novoNome) { alert('Digite um nome válido.'); return; }
+
+            const contrato = contratosList[editingContratoIndex];
+            const nomeAntigo = contrato.nomeArquivo;
+
+            if (novoNome === nomeAntigo) { cancelContratoForm(); return; }
+
+            try {
+                if (useSharePoint && contrato.fromSharePoint) {
+                    // Renomear via Graph API patch
+                    const response = await fetch(
+                        `https://graph.microsoft.com/v1.0/sites/${SP_SITE_ID}/drive/items/${contrato.id}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': `Bearer ${spAccessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ name: novoNome })
+                        }
+                    );
+                    if (!response.ok) throw new Error('Falha ao renomear no SharePoint');
+                    await loadContratosFromSharePoint();
+                } else {
+                    // Atualizar no IndexedDB
+                    await new Promise((resolve, reject) => {
+                        const tx = contratosDB.transaction(['contratos'], 'readwrite');
+                        const store = tx.objectStore('contratos');
+                        const req = store.get(contrato.id);
+                        req.onsuccess = () => {
+                            const data = req.result;
+                            data.nomeArquivo = novoNome;
+                            const upd = store.put(data);
+                            upd.onsuccess = () => resolve();
+                            upd.onerror = () => reject(upd.error);
+                        };
+                        req.onerror = () => reject(req.error);
+                    });
+                    await loadContratos();
+                }
+                cancelContratoForm();
+                reprocessExtractedResults();
+            } catch(e) {
+                console.error('Erro ao renomear contrato:', e);
+                alert('Erro ao renomear contrato.');
+            }
+        }
+
         async function viewContrato(index) {
             const contrato = contratosList[index];
-            if (!contrato) return;
             
             try {
                 if (contrato.fromSharePoint) {
